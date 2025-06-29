@@ -1,0 +1,2 @@
+SELECT DISTINCT loss_reason_c 
+FROM `evme-ptt.evme_staging.stg_salesforce_opportunity`;
