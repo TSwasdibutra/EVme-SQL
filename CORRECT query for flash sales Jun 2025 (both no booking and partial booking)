@@ -1,0 +1,133 @@
+WITH cte AS (
+  SELECT tb_activity.*, 
+  tb_vehicle.plate_number,
+  tb_vehicle.business_group,
+  tb_vehicle.business_prupose,
+  tb_vehicle.car_brand_name,
+  tb_vehicle.car_model_name,
+  tb_vehicle.car_tier,
+  tb_vehicle.vehicle_name,
+  tb_vehicle.color,
+  tb_vehicle.status,
+  tb_vehicle.arrival_date
+  FROM evme-ptt.evme_data_mart.dmt_salesforce_activity_by_date as tb_activity
+  LEFT JOIN evme-ptt.evme_staging.stg_salesforce_vehicle_master as tb_vehicle
+  ON tb_activity.vin = tb_vehicle.vin
+  WHERE tb_vehicle.business_group = "B2C-In app"
+),
+
+cte_2 AS (
+  SELECT
+  date(t1.created_date) created_date
+  ,t1.cal_date
+  ,t1.end_date
+  ,DATE_DIFF(t1.end_date,t1.cal_date,DAY) rented_duration
+  ,t1.booking_id
+  ,t1.booking_detail_id
+  ,t1.car_id
+  ,t1.vin
+  ,t1.user_id
+  ,t1.package_plan
+  ,t1.estimated_revenue as estimated_revenue
+	,CASE WHEN t1.cal_date >= CURRENT_DATE THEN 0 ELSE t1.estimated_revenue END AS actual_revenue
+	,CASE WHEN t1.cal_date < CURRENT_DATE THEN 0 ELSE t1.estimated_revenue END AS prospected_revenue
+  ,t1.booking_status
+  ,CASE WHEN t1.cal_date >= CURRENT_DATE THEN t1.booking_detail_id END AS prospected_booking_detail_id
+  ,t1.location_name
+  ,CASE WHEN source_system = '1' THEN 'Package rent' ELSE 'Common rent' END AS rent_type
+	,CASE WHEN t2.country in ('TH','non-kyc') THEN t2.country ELSE 'Foreigner' END AS country_type
+	,CASE WHEN t2.country_name is null OR t2.country_name in ('Thailand','unknown')
+		THEN t2.country_name ELSE 'Foreigner'
+		END AS cust_type
+  ,(t1.package_plan+1) AS total_rented_day
+  ,CASE 
+      WHEN DATE_DIFF(t1.cal_date, EXTRACT(DATE FROM t1.created_date), DAY) <= 7 THEN '1-7' 
+      WHEN DATE_DIFF(t1.cal_date, EXTRACT(DATE FROM t1.created_date), DAY) BETWEEN 8 AND 14 THEN '8-14' 
+      WHEN DATE_DIFF(t1.cal_date, EXTRACT(DATE FROM t1.created_date), DAY) BETWEEN 15 AND 21 THEN '15-21'
+      WHEN DATE_DIFF(t1.cal_date, EXTRACT(DATE FROM t1.created_date), DAY) BETWEEN 22 AND 30 THEN '22-30' 
+      WHEN DATE_DIFF(t1.cal_date, EXTRACT(DATE FROM t1.created_date), DAY) BETWEEN 31 AND 45 THEN '31-45' 
+      WHEN DATE_DIFF(t1.cal_date, EXTRACT(DATE FROM t1.created_date), DAY) BETWEEN 46 AND 60 THEN '46-60' 
+      WHEN DATE_DIFF(t1.cal_date, EXTRACT(DATE FROM t1.created_date), DAY) > 60 THEN '>60' 
+      END AS day_before_active
+  ,CASE WHEN source_system = '1' THEN t1.estimated_revenue END AS package_revenue
+  ,CASE WHEN source_system = '2' THEN t1.estimated_revenue END AS common_revenue
+  ,CASE WHEN source_system = '1' THEN t1.booking_detail_id END AS package_booking_detail_id
+  ,CASE WHEN source_system = '2' THEN t1.booking_detail_id END AS common_booking_detail_id
+--  ,CAST(DATETIME(t1.created_date, "Asia/Bangkok") AS DATE) created_date
+  ,1 row_cnt
+
+  ,EXTRACT(MONTH FROM t1.cal_date) cal_date_month
+  ,t2.rental_customer_category as customer_type_by_cal_date
+  ,t2.created_customer_category as customer_type_by_created_date
+  ,case when EXTRACT(YEAR FROM t2.first_booking_date) < EXTRACT(YEAR FROM CURRENT_DATE) then 'Existing customer'
+  else 'New customer' end customer_new_yn
+  ,case when t2.first_booking_date is null then 'New users' 
+    when t2.first_booking_date <DATE_TRUNC(t1.cal_date, MONTH) then 'Old users'
+  else 'New users' end user_new_yn
+  ,t2.diff_month_booking_created_after_register
+  ,t2.first_booking_after_register_type
+  ,case when t2.date_of_birth is null then 'NA'
+    when DATE_DIFF(t1.cal_date,t2.date_of_birth,YEAR) between 21 and 30 then '21-30'
+    when DATE_DIFF(t1.cal_date,t2.date_of_birth,YEAR) between 31 and 40 then '31-40'
+    when DATE_DIFF(t1.cal_date,t2.date_of_birth,YEAR) between 41 and 50 then '41-50'
+    when DATE_DIFF(t1.cal_date,t2.date_of_birth,YEAR) between 51 and 60 then '51-60'
+    when DATE_DIFF(t1.cal_date,t2.date_of_birth,YEAR) <21 then '< 21'
+  else '> 60' end age_group
+  ,case when t2.country = 'TH' then 'Thai'
+	when t2.country = 'non-kyc' then 'non-kyc'
+  else 'Foreigner' end customer_type
+  ,t1.service_type
+  ,t1.booking_type
+  ,t1.is_include_extend_booking
+  ,t2.nationality_type AS is_foreigner
+  ,t2.country
+  ,t2.country_name
+  ,t2.gender
+  ,t6.car_brand_name as brand_name
+  ,t6.car_model_name as model_name
+  ,t6.car_tier
+  ,t6.plate_number
+  ,t6.car_model_color as colour
+  ,t4.month_name
+  ,t4.month
+  ,LEFT(t4.id,7) year_month
+  ,t1.agent_id
+  ,t1.agent_name
+  ,CASE WHEN t1.source_system = '2' and t1.agent_id = 'AGT-0000000001' THEN estimated_revenue END AS common_evme_app_revenue
+  ,CASE WHEN t1.source_system = '2' and t1.agent_id <> 'AGT-0000000001' THEN estimated_revenue END AS common_ota_revenue
+  ,CASE WHEN t1.source_system = '2' and t1.agent_id = 'AGT-0000000001' THEN t1.booking_detail_id END AS common_evme_app_detail_id
+  ,CASE WHEN t1.source_system = '2' and t1.agent_id <> 'AGT-0000000001' THEN t1.booking_detail_id END AS common_ota_detail_id
+  ,concat(DATE_DIFF(t1.cal_date,cast(t1.created_date as date), DAY),'days') AS diff_in_days
+  ,CASE WHEN t5.aditional_service_en ='EVme Cover Plus' THEN t5.price END AS add_service_cover_plus_price
+  ,CASE WHEN t5.aditional_service_en ='Deliver by Evme' THEN t5.price END AS add_service_deliver_price
+  ,CASE WHEN t5.aditional_service_en ='Return by Evme' THEN t5.price END AS add_service_return_price
+FROM  `evme-ptt.evme_data_mart.dmt_all_booking` t1
+  LEFT JOIN `evme_datawarehouse.dim_customer` t2 ON t1.user_id = t2.user_id
+  LEFT JOIN `evme_datawarehouse.dim_car` t3 ON t1.car_id = t3.car_id
+  LEFT JOIN `evme-ptt.evme_staging.stg_salesforce_vehicle_master` t6 ON t1.vin = t6.vin
+  LEFT JOIN `evme-ptt.evme_data_mart.dmt_common_rent_booking_additional_service_completed` t5 ON t1.booking_detail_id = t5.booking_detail_id
+  LEFT JOIN `evme_datawarehouse.dwh_dim_date` t4 ON t1.cal_date = t4.cal_date
+WHERE t1.cal_date <= DATE_ADD(CURRENT_DATE(), INTERVAL 2 MONTH)
+AND  t1.cal_date >= '2022-02-04'
+AND  t1.cal_date BETWEEN DATE('2025-06-01') AND DATE('2025-06-30')
+)
+
+SELECT DISTINCT cte.vin,
+  cte.car_model_name,
+  cte.car_tier,
+  cte.color,
+  cte.plate_number,
+  cte.business_group,
+  cte.status,
+  cte_2.created_date,
+  cte_2.cal_date,
+  cte_2.end_date,
+  cte_2.rented_duration,
+  cte_2.estimated_revenue,
+  cte_2.actual_revenue,
+  cte_2.booking_status,
+  cte_2.rent_type
+FROM cte
+LEFT JOIN cte_2
+  ON cte.vin = cte_2.vin
+WHERE cte.status = "Available";
