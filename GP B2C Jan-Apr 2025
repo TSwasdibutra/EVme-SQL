@@ -1,0 +1,5 @@
+SELECT booking_start_date, booking_end_date, estimated_revenue, vin, model_name, car_tier
+FROM `evme-ptt.evme_data_mart.booking_with_voucher`
+WHERE car_tier IN ("Active", "Aspiring", "Premium") 
+  AND booking_start_date >= DATE '2025-01-01' 
+  AND booking_end_date <= DATE '2025-05-01';
