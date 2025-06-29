@@ -1,0 +1,2 @@
+SELECT * 
+FROM `evme-ptt.evme_staging.stg_salesforce_vehicle_master`;
