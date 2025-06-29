@@ -1,0 +1,62 @@
+select
+t1.id contract_id,
+t1.account_id,
+t1.start_date,
+t1.contract_end_date_c end_date,
+t1.status contract_status,
+t1.payment_type_c,
+t1.contract_number,
+t1.contract_no_c,
+date(datetime(t1.created_date, 'Asia/Bangkok')) as contract_created_date,
+time(datetime(t1.created_date, 'Asia/Bangkok')) as contract_created_time,
+t2.name account_name,
+t2.business_type_c,
+t2.sector_c,
+t3.grand_total,
+t3.contract_terms_months_2_c,
+t4.vin_c vin_number,
+t4.name plate_number,
+t5.name car_name,
+t5.car_group_c,
+t6.name as owner_name,
+SUBSTR(t6.name, 1, STRPOS(t6.name, ' ') - 1) AS owner_first_name,
+t1.file_checker_c,
+t1.rc_tire_c,
+t1.rc_spare_key_c,
+t1.rc_replacement_description_c,
+t1.rc_tire_responsibility_c,
+t1.rc_replacement_within_hr_c,
+t1.deposit_amount_c,
+t1.severity_level_c,
+t2.rental_type_c,
+t4.engine_number_c,
+t7.first_name,
+t7.last_name,
+t1.driver_name_c,
+t1.deductible_amount_c,
+t1.deposit_amount_c,
+t8.id as driver_id,
+t8.contact_type_c as contact_type,
+t8.email,
+t8.first_name as driver_firstname,
+t8.mailing_city,
+t8.mailing_postal_code,
+t8.mailing_state,
+t8.mailing_street,
+t8.mobile_phone,
+t8.name as fullname,
+t8.other_title_c,
+t8.phone,
+t8.title_c,
+t1.fleet_c,
+from
+`evme_staging.stg_salesforce_contract` t1
+left join `evme-ptt.evme_staging.stg_salesforce_account` t2 on t1.account_id = t2.id
+left join `evme_staging.stg_salesforce_quote` t3 on t1.opportunity_name_c = t3.opportunity_id
+left join `evme_staging.stg_salesforce_asset` t4 on t1.plate_number_c = t4.id
+left join `evme-ptt.salesforce_prod.product_2` t5 on t4.product_2_id = t5.id
+left join `evme-ptt.salesforce_prod.user` t6 on t1.owner_id = t6.id
+left join `evme-ptt.evme_staging.stg_salesforce_contact` t7 on t1.account_id = t7.account_id
+left join `evme-ptt.salesforce_prod.contact` t8 on t8.account_id = t1.account_id
+where
+lower(t5.car_group_c) not in ('bus', 'motorcycle') AND t1.fleet_c = "B2B"
