@@ -1,0 +1,3 @@
+SELECT vin, tier, monthly_dep
+FROM `evme-ptt.evme_raw_data.car_depreciation_detail`
+WHERE tier IN ("Active", "Aspiring", "Premium");
