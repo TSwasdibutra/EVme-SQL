@@ -1,0 +1,49 @@
+WITH cte AS (
+  SELECT 
+  t1.id opp_id,
+  t1.account_id,
+  t1.amount,
+  t1.amount_of_car_c,
+  t1.budget_c,
+  t1.car_group_c,
+  t1.car_brand_c,
+  t1.car_model_c,
+  t1.close_date,
+  t1.created_date,
+  date(datetime(t1.created_date, 'Asia/Bangkok')) as formatted_created_date,
+  t1.contract_terms_months_c,
+  t1.estimated_end_contract_date_c,
+  t1.estimated_start_contract_date_c,
+  t1.forecast_category,
+  t1.name opp_name,
+  t1.owner_id,
+  t1.probability,
+  t1.rental_type_c,
+  t1.stage_name,
+  t1.loss_reason_c,
+  extract (month from t1.close_date) close_month,
+  FORMAT_DATE("%Y-%m", DATE(t1.close_date)) close_year_month,
+  t2.name owner_name,
+  SUBSTR(t2.name, 1, STRPOS(t2.name, ' ') - 1) AS owner_first_name,
+  t3.business_type_c,
+  t3.name account_name,
+  t3.sector_c,
+  t6.name car_name
+  FROM `evme_staging.stg_salesforce_opportunity` t1
+  left join `evme-ptt.salesforce_prod.user` t2 on t1.owner_id = t2.id
+  left join `evme_staging.stg_salesforce_account` t3 on t1.account_id = t3.id
+  left join `evme_staging.stg_salesforce_contract` t4 on t4.opportunity_name_c = t1.id
+  LEFT JOIN `evme_staging.stg_salesforce_asset` t5 ON t4.plate_number_c = t5.id
+  LEFT JOIN `evme-ptt.salesforce_prod.product_2` t6 ON t5.product_2_id = t6.id
+  where t1.car_group_c not in ('Bus', 'Motorcycle')
+  and t1.contact_id is null
+)
+
+SELECT 
+  *, 
+  budget_c / amount_of_car_c AS avg_budget_per_car_per_contract,
+  budget_c / amount_of_car_c / contract_terms_months_c AS avg_budget_per_car_per_month
+FROM cte
+WHERE stage_name = "Closed Lost"
+  AND loss_reason_c IN ("Price", "Lost to Competitor")
+ORDER BY amount_of_car_c DESC;
