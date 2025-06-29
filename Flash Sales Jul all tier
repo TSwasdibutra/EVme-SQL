@@ -1,0 +1,14 @@
+SELECT 
+  vin, 
+  model_name, 
+  colour, 
+  car_tier, 
+  booking_id, 
+  booking_start_date, 
+  booking_end_date,
+  booking_detail_id,
+  DATE_DIFF(DATE(booking_end_date), DATE(booking_start_date), DAY) AS booking_range,
+  DATE_DIFF(DATE(booking_start_date), DATE(booking_created_date), DAY) AS day_booking_in_advance
+FROM `evme-ptt.evme_data_mart.booking_with_voucher` 
+WHERE DATE(booking_start_date) BETWEEN DATE('2025-07-01') AND DATE('2025-07-31')
+ORDER BY vin DESC, booking_start_date ASC;
