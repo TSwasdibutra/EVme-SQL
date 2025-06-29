@@ -1,0 +1,22 @@
+WITH cte AS (
+  SELECT tb_activity.*, 
+  tb_vehicle.plate_number,
+  tb_vehicle.business_group,
+  tb_vehicle.business_prupose,
+  tb_vehicle.car_brand_name,
+  tb_vehicle.car_model_name,
+  tb_vehicle.car_tier,
+  tb_vehicle.vehicle_name,
+  tb_vehicle.color,
+  tb_vehicle.status,
+  tb_vehicle.arrival_date
+  FROM evme-ptt.evme_data_mart.dmt_salesforce_activity_by_date as tb_activity
+  LEFT JOIN evme-ptt.evme_staging.stg_salesforce_vehicle_master as tb_vehicle
+  ON tb_activity.vin = tb_vehicle.vin
+)
+
+SELECT DISTINCT cte.car_model_name,
+  cte.car_tier,
+  cte.business_group
+FROM cte
+WHERE business_group = "B2C-In app";
