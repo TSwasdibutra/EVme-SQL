@@ -1,0 +1,25 @@
+WITH cte_all AS (
+  SELECT 
+    acc.id AS account_unique_id,
+    acc.company_name_c,
+    acc.business_type_c,
+    opp.id AS transaction_id,
+    opp.amount AS rpu,
+    opp.budget_c AS budget,
+    opp.stage_name,
+    opp.loss_reason_c,
+    opp.reason_for_closed_won_c
+  FROM `evme-ptt.evme_staging.stg_salesforce_account` acc
+  LEFT JOIN `evme-ptt.evme_staging.stg_salesforce_opportunity` opp
+    ON acc.id = opp.account_id
+  WHERE acc.company_name_c IS NOT NULL
+)
+
+SELECT 
+  stage_name,
+  reason_for_closed_won_c,
+  COUNT(reason_for_closed_won_c) AS reason_count
+FROM cte_all
+WHERE stage_name = "Closed Lost"
+GROUP BY stage_name, reason_for_closed_won_c
+ORDER BY reason_count DESC;
