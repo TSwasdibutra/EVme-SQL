@@ -1,0 +1,5 @@
+SELECT DISTINCT tb_vehicle.car_model_name
+FROM evme-ptt.evme_data_mart.dmt_salesforce_activity_by_date as tb_activity
+LEFT JOIN evme-ptt.evme_staging.stg_salesforce_vehicle_master as tb_vehicle
+  ON tb_activity.vin = tb_vehicle.vin
+WHERE tb_vehicle.business_group = "B2C-In app"
