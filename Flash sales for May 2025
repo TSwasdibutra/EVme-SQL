@@ -1,0 +1,4 @@
+SELECT vin, model_name, colour, car_tier,  booking_id, booking_start_date, booking_end_date
+FROM `evme-ptt.evme_data_mart.booking_with_voucher` 
+WHERE booking_start_date >= DATE('2025-05-01')
+ORDER BY vin DESC, booking_start_date ASC;
