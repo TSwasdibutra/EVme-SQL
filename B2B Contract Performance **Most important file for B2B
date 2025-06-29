@@ -1,0 +1,43 @@
+SELECT
+  t1.id AS contract_id,
+  t1.account_id,
+  t1.start_date,
+  t1.contract_end_date_c AS end_date,
+  t1.status AS contract_status,
+  t1.payment_type_c,
+  t1.contract_number,
+  t1.contract_no_c,
+  DATE(DATETIME(t1.created_date, 'Asia/Bangkok')) AS contract_created_date,
+  TIME(DATETIME(t1.created_date, 'Asia/Bangkok')) AS contract_created_time,
+  t2.name AS account_name,
+  t2.business_type_c,
+  t2.sector_c,
+  t3.grand_total,
+  t3.contract_terms_months_2_c,
+  t4.vin_c AS vin_number,
+  t4.name AS plate_number,
+  t5.name AS car_name,
+  t5.car_group_c,
+  t6.name AS owner_name,
+  SUBSTR(t6.name, 1, STRPOS(t6.name, ' ') - 1) AS owner_first_name,
+  t1.file_checker_c,
+  t1.rc_tire_c,
+  t1.rc_spare_key_c,
+  t1.rc_replacement_description_c,
+  t1.rc_tire_responsibility_c,
+  t1.rc_replacement_within_hr_c,
+  t1.deposit_amount_c,
+  t1.severity_level_c,
+  t2.rental_type_c,
+  t4.engine_number_c,
+  t1.driver_name_c,
+  t1.deductible_amount_c,
+  t1.deposit_amount_c,
+  t1.fleet_c
+FROM `evme_staging.stg_salesforce_contract` t1
+LEFT JOIN `evme-ptt.evme_staging.stg_salesforce_account` t2 ON t1.account_id = t2.id
+LEFT JOIN `evme_staging.stg_salesforce_quote` t3 ON t1.opportunity_name_c = t3.opportunity_id
+LEFT JOIN `evme_staging.stg_salesforce_asset` t4 ON t1.plate_number_c = t4.id
+LEFT JOIN `evme-ptt.salesforce_prod.product_2` t5 ON t4.product_2_id = t5.id
+LEFT JOIN `evme-ptt.salesforce_prod.user` t6 ON t1.owner_id = t6.id
+WHERE LOWER(t5.car_group_c) NOT IN ('bus', 'motorcycle');
