@@ -1,0 +1,3 @@
+SELECT * 
+FROM `evme-ptt.evme_staging.stg_salesforce_fleet_activity`
+WHERE business_group = "B2B";
