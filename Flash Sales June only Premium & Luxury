@@ -1,0 +1,13 @@
+SELECT vin, 
+  model_name, 
+  colour, 
+  car_tier, 
+  booking_id, 
+  booking_start_date, 
+  booking_end_date,
+  start_date,
+  booking_detail_id
+FROM `evme-ptt.evme_data_mart.booking_with_voucher` 
+WHERE booking_start_date BETWEEN DATE('2025-06-01') AND DATE('2025-06-30')
+  AND car_tier IN ('Premium', 'Executive')
+ORDER BY vin DESC, booking_start_date ASC;
