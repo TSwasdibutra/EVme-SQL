@@ -1,0 +1,39 @@
+WITH cte AS (
+  SELECT tb_activity.*, 
+  tb_vehicle.plate_number,
+  tb_vehicle.business_group,
+  tb_vehicle.business_prupose,
+  tb_vehicle.car_brand_name,
+  tb_vehicle.car_model_name,
+  tb_vehicle.car_tier,
+  tb_vehicle.vehicle_name,
+  tb_vehicle.color,
+  tb_vehicle.status,
+  tb_vehicle.arrival_date
+  FROM evme-ptt.evme_data_mart.dmt_salesforce_activity_by_date as tb_activity
+  LEFT JOIN evme-ptt.evme_staging.stg_salesforce_vehicle_master as tb_vehicle
+  ON tb_activity.vin = tb_vehicle.vin
+),
+
+cte_2 AS (
+  SELECT vin,
+  booking_start_date,
+  booking_created_date,
+  estimated_revenue
+  FROM evme-ptt.evme_data_mart.booking_with_voucher
+  WHERE booking_start_date BETWEEN DATE('2025-06-01') AND DATE('2025-06-30')
+)
+
+SELECT DISTINCT cte.vin,
+  cte.car_model_name,
+  cte.car_tier,
+  cte.color,
+  cte.plate_number,
+  cte.business_group,
+  cte_2.booking_start_date,
+  cte_2.booking_created_date,
+  cte_2.estimated_revenue
+FROM cte
+LEFT JOIN cte_2
+  ON cte.vin = cte_2.vin
+WHERE business_group = "B2C-In app";
