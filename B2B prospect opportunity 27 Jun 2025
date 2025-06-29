@@ -1,0 +1,21 @@
+SELECT 
+  o.account_id, 
+  a.company_name_c,
+  a.business_type_c,
+  a.car_brand_model_c,
+  a.competitor_c,
+  a.fleet_size_c,
+  a.sector_c,
+  #a.status_c,
+  o.stage_name,
+  o.description,
+  o.contract_terms_months_c,
+  o.car_group_c,
+  #o.car_model_c,
+  o.budget_c,
+  o.amount_of_car_c,
+  o.rental_objective_c
+FROM `evme-ptt.evme_staging.stg_salesforce_opportunity` AS o
+LEFT JOIN `evme-ptt.evme_staging.stg_salesforce_account` AS a
+  ON o.account_id = a.id
+WHERE o.stage_name = "Prospecting";
